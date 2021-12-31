@@ -25,10 +25,20 @@ pub struct ASTree {
 #[derive(Debug)]
 pub enum BLError {
     GeneralError,
+    ParserError(String),
 }
 
 pub fn compile(input: &str) -> Result<ASTree, BLError> {
-    let (_, program) = parse_program(input).map_err(|_| BLError::GeneralError)?;
+    let (input, program) = parse_program(input).map_err(|e| match e {
+        nom::Err::Error(f) | nom::Err::Failure(f) => {
+            let line = f.input.lines().next();
+            match line {
+                Some(s) => BLError::ParserError(s.to_string()),
+                None => BLError::GeneralError
+            }
+        },
+        _ => BLError::GeneralError
+    })?;
     let program = ASTree { program };
 
     Ok(program)

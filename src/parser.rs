@@ -5,7 +5,8 @@ use nom::{
     character::complete::{multispace0, multispace1, line_ending, one_of, digit1, alphanumeric1, alphanumeric0, alpha1},
     multi::{many0, many1, separated_list1},
     branch::{alt},
-    sequence::{terminated, delimited, pair}, combinator::recognize,
+    sequence::{terminated, delimited, pair}, 
+    combinator::{recognize, all_consuming},
 };
 
 use crate::ASTreeNode;
@@ -91,12 +92,13 @@ fn parse_var_definition(input: &str) -> IResult<&str, ASTreeNode> {
 fn parse_statement(input: &str) -> IResult<&str, ASTreeNode> {
     let (input, output) = delimited(multispace0, alt((parse_var_definition, parse_expression)), multispace0)(input)?;
     let (input, _) = tag(";")(input)?;
+    let (input, _) = multispace0(input)?;
 
     Ok((input, ASTreeNode::Statement(vec![output])))
 }
 
 pub fn parse_program(input: &str) -> IResult<&str, ASTreeNode> {
-    let (input, output) = many1(parse_statement)(input)?;
+    let (input, output) = all_consuming(many1(parse_statement))(input)?;
     
     let program = ASTreeNode::Program(output);
 
