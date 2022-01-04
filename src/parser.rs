@@ -28,6 +28,7 @@ fn parse_literal_arr(input: &str) -> IResult<&str, ASTreeNode> {
     let (input, _) = multispace0(input)?; // optional whitespace
     let (input, output_arr) = separated_list1(terminated(tag(","), multispace0),
                                               parse_literal)(input)?;
+    let (input, _) = alt((tag(","), multispace0))(input)?; // optional extra comma
     let (input, _) = multispace0(input)?; // optional whitespace
     let (input, _) = tag("}")(input)?;
 
@@ -89,9 +90,53 @@ fn parse_var_definition(input: &str) -> IResult<&str, ASTreeNode> {
     Ok((input, ASTreeNode::VariableDef(var_name, var_val)))
 }
 
+fn parse_var_assignment(input: &str) -> IResult<&str, ASTreeNode> {
+    let (input, var_name) = parse_variable_helper(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, _) = tag("=")(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, var_val) = parse_expression(input)?;
+
+    let var_val = Box::new(var_val);
+
+    Ok((input, ASTreeNode::VariableDef(var_name, var_val)))
+}
+
+fn parse_func_args(input: &str) -> IResult<&str, ASTreeNode> {
+    let (input, _) = multispace0(input)?;
+    let (input, args) = separated_list1(terminated(tag(","), multispace0),
+                                          parse_expression)(input)?;
+    let (input, _) = alt((tag(","), multispace0))(input)?;
+    let (input, _) = multispace0(input)?;
+
+    Ok((input, ASTreeNode::FunctionArgs(args)))
+}
+
+fn parse_func_definition(input: &str) -> IResult<&str, ASTreeNode> {
+    let (input, _) = tag("let")(input)?;
+    let (input, _) = multispace1(input)?;
+    let (input, func_name) = parse_variable_helper(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, _) = tag("(")(input)?;
+    // PARSE ARGS HERE
+    let (input, _) = tag(")")(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, _) = tag("=")(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, _) = tag("{")(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, func_body) = many1(parse_statement)(input)?;
+    let (input, _) = tag("}")(input)?;
+
+    Ok((input, ASTreeNode::FunctionDef(func_name, Vec::<ASTreeNode>::new(), func_body)))
+}
+
 fn parse_statement(input: &str) -> IResult<&str, ASTreeNode> {
-    let (input, output) = delimited(multispace0, alt((parse_var_definition, parse_expression)), multispace0)(input)?;
-    let (input, _) = tag(";")(input)?;
+    let (input, _) = multispace0(input)?;
+    //let (input, output) = delimited(multispace0, alt((parse_var_definition, parse_expression)), multispace0)(input)?;
+    let (input, output) = alt((parse_var_definition, parse_expression, parse_func_definition, parse_var_definition))(input)?;
+    let (input, _) = multispace0(input)?;
+    let (input, _) = alt((tag(";"), multispace1))(input)?;
     let (input, _) = multispace0(input)?;
 
     Ok((input, ASTreeNode::Statement(vec![output])))

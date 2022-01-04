@@ -17,5 +17,14 @@ let compare(x[4], y[4]) = {
 	return 1
 }
 
+let add(x[4], y[4]) : [4] = {
+	for {i,j} in x * y {
+		if i != j {
+			return 0
+		}
+	}
+	return 1
+}
+
 assert(compare(c,d) == 1)
 assert(a != b)

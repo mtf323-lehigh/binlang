@@ -15,6 +15,9 @@ pub enum ASTreeNode {
     GeneratedArr(BitVec),
     Variable(String),
     VariableDef(String, Box<ASTreeNode>),
+    FunctionCall(String, Vec<ASTreeNode>),
+    FunctionDef(String, Vec<ASTreeNode>, Vec<ASTreeNode>),
+    FunctionArgs(Vec<ASTreeNode>),
 }
 
 #[derive(Debug)]
